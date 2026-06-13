@@ -1,0 +1,53 @@
+name: Build YouTube IPA
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # allows manual trigger from GitHub UI
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Select Xcode version
+        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Build app (unsigned)
+        run: |
+          xcodebuild \
+            -project YouTubeApp/YouTubeApp.xcodeproj \
+            -scheme YouTubeApp \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            ONLY_ACTIVE_ARCH=NO
+
+      - name: Find .app bundle
+        run: |
+          find build -name "*.app" -type d
+          echo "APP_PATH=$(find build -name '*.app' -type d | head -1)" >> $GITHUB_ENV
+
+      - name: Package into IPA
+        run: |
+          mkdir -p Payload
+          cp -r "$APP_PATH" Payload/YouTubeApp.app
+          zip -r YouTubeApp.ipa Payload
+          rm -rf Payload
+          echo "[+] IPA created: $(du -sh YouTubeApp.ipa | cut -f1)"
+
+      - name: Upload IPA as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: YouTubeApp-IPA
+          path: YouTubeApp.ipa
+          retention-days: 30
