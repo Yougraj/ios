@@ -10,9 +10,9 @@
     <key>CFBundleDisplayName</key>
     <string>YouTube</string>
     <key>CFBundleVersion</key>
-    <string>1</string>
+    <string>2</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.0</string>
+    <string>1.1</string>
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundlePackageType</key>
@@ -23,12 +23,15 @@
     <string>12.0</string>
     <key>UIRequiresFullScreen</key>
     <true/>
+    <!-- Hide status bar at launch -->
     <key>UIStatusBarHidden</key>
-    <false/>
+    <true/>
+    <!-- Let view controller control status bar -->
     <key>UIViewControllerBasedStatusBarAppearance</key>
-    <false/>
-    <key>UIStatusBarStyle</key>
-    <string>UIStatusBarStyleLightContent</string>
+    <true/>
+    <!-- Edge-to-edge: disable safe area insets from system -->
+    <key>UILaunchScreen</key>
+    <dict/>
     <key>UISupportedInterfaceOrientations</key>
     <array>
         <string>UIInterfaceOrientationPortrait</string>

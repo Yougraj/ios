@@ -7,24 +7,40 @@ class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
     var progressView: UIProgressView!
     var observation: NSKeyValueObservation?
 
+    // MARK: - Status bar hidden + edge-to-edge
+
+    override var prefersStatusBarHidden: Bool { return true }
+    override var preferredStatusBarUpdateAnimation: UIStatusBarAnimation { return .none }
+
     override func loadView() {
         let config = WKWebViewConfiguration()
         config.allowsInlineMediaPlayback = true
         config.mediaTypesRequiringUserActionForPlayback = []
 
-        webView = WKWebView(frame: .zero, configuration: config)
+        webView = WKWebView(frame: UIScreen.main.bounds, configuration: config)
         webView.navigationDelegate = self
         webView.uiDelegate = self
-        // Use a real iPhone Safari UA so YouTube serves mobile site
+        webView.scrollView.contentInsetAdjustmentBehavior = .never
         webView.customUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 15_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.6 Mobile/15E148 Safari/604.1"
         view = webView
     }
 
     override func viewDidLoad() {
         super.viewDidLoad()
+
+        // Extend layout under status bar and home indicator
+        edgesForExtendedLayout = .all
+        extendedLayoutIncludesOpaqueBars = true
+
         setupProgressBar()
         setupRefreshControl()
         loadYouTube()
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        // Keep webView pinned to screen edges, ignoring safe area
+        webView.frame = view.bounds
     }
 
     private func loadYouTube() {
@@ -34,7 +50,7 @@ class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
         webView.load(request)
     }
 
-    // MARK: - Progress bar
+    // MARK: - Progress bar (pinned to very top of screen)
 
     private func setupProgressBar() {
         progressView = UIProgressView(progressViewStyle: .bar)
@@ -44,7 +60,7 @@ class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
         view.addSubview(progressView)
 
         NSLayoutConstraint.activate([
-            progressView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            progressView.topAnchor.constraint(equalTo: view.topAnchor),
             progressView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             progressView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             progressView.heightAnchor.constraint(equalToConstant: 2)
@@ -74,6 +90,13 @@ class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         progressView.isHidden = true
+        // Inject CSS to remove YouTube's own top padding added for safe area
+        let js = """
+            var style = document.createElement('style');
+            style.innerHTML = 'ytd-app { --ytd-toolbar-offset: 0px !important; }';
+            document.head.appendChild(style);
+        """
+        webView.evaluateJavaScript(js, completionHandler: nil)
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
